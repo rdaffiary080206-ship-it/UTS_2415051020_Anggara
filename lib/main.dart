@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
 
 import 'screens/main_screen.dart';
 import 'providers/match_provider.dart';
 
-void main() {
+void main() async {
+  // Wajib ditambahkan jika main() menggunakan async
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Menghubungkan aplikasi ke database Supabase Anda
+  await Supabase.initialize(
+    url:
+        'https://xmpcfjzbpecpmjcoarql.supabase.co', // URL dasar tanpa /rest/v1/
+    anonKey: 'sb_publishable_6BKCZcoa4xl2pF2XkbptmQ_zaif8mhr', // Ganti dengan kunci yang berawalan 'eyJ' jika nanti error
+  );
+
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => MatchProvider())],
