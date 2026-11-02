@@ -1,40 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/match_provider.dart';
 import '../widgets/match_card.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Data dummy yang disimpan ke dalam list agar mudah digunakan di List maupun Grid
-    final List<Widget> dummyMatches = [
-      const MatchCard(
-        homeTeam: 'Real Madrid',
-        awayTeam: 'Barcelona',
-        timeOrScore: '2 - 1',
-        status: 'FT',
-      ),
-      const MatchCard(
-        homeTeam: 'Man United',
-        awayTeam: 'Liverpool',
-        timeOrScore: '22:00',
-        status: 'SCHEDULED',
-      ),
-      const MatchCard(
-        homeTeam: 'AC Milan',
-        awayTeam: 'Inter Milan',
-        timeOrScore: '0 - 0',
-        status: 'LIVE 45\'',
-      ),
-      const MatchCard(
-        homeTeam: 'Arsenal',
-        awayTeam: 'Chelsea',
-        timeOrScore: '23:30',
-        status: 'SCHEDULED',
-      ),
-    ];
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Memanggil API otomatis saat halaman pertama kali dibuka
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MatchProvider>().fetchMatches();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -43,31 +31,87 @@ class HomeScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          // Jika lebar layar kurang dari 600px (Layar HP / Mode Compact)
-          if (constraints.maxWidth < 600) {
-            return ListView(
-              padding: const EdgeInsets.only(top: 16),
-              children: dummyMatches,
+      body: Consumer<MatchProvider>(
+        builder: (context, provider, child) {
+          // 1. Loading State
+          if (provider.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.greenAccent),
             );
           }
-          // Jika lebar layar 600px atau lebih (Layar Laptop / Mode Wide)
-          else {
-            return GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // Menampilkan 2 kolom
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                childAspectRatio: 3.0, // Mengatur proporsi bentuk kartu agar tidak terlalu kotak
+
+          // 2. Error State
+          if (provider.errorMessage.isNotEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.wifi_off, size: 50, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text(
+                    provider.errorMessage,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () =>
+                        provider.fetchMatches(), // Tombol coba lagi
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.greenAccent,
+                    ),
+                    child: const Text(
+                      'Coba Lagi',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  ),
+                ],
               ),
-              itemCount: dummyMatches.length,
-              itemBuilder: (context, index) {
-                return dummyMatches[index];
-              },
             );
           }
+
+          // 3. Empty State
+          if (provider.matches.isEmpty) {
+            return const Center(
+              child: Text(
+                'Belum ada jadwal pertandingan hari ini.',
+                style: TextStyle(color: Colors.grey),
+              ),
+            );
+          }
+
+          // 4. Data State (Sukses) dengan Layout Builder (Responsive)
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              // Ubah data API menjadi bentuk Widget MatchCard
+              final matchCards = provider.matches.map((match) {
+                return MatchCard(
+                  homeTeam: match.homeTeam,
+                  awayTeam: match.awayTeam,
+                  timeOrScore: match.matchDate,
+                  status: match.status,
+                );
+              }).toList();
+
+              if (constraints.maxWidth < 600) {
+                return ListView(
+                  padding: const EdgeInsets.only(top: 16),
+                  children: matchCards,
+                );
+              } else {
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 3.0,
+                  ),
+                  itemCount: matchCards.length,
+                  itemBuilder: (context, index) => matchCards[index],
+                );
+              }
+            },
+          );
         },
       ),
     );
