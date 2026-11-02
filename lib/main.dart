@@ -1,24 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'screens/main_screen.dart';
 import 'providers/match_provider.dart';
+import 'providers/watchlist_provider.dart';
 
 void main() async {
-  // Wajib ditambahkan jika main() menggunakan async
+  // Wajib ditambahkan karena main() menggunakan async
   WidgetsFlutterBinding.ensureInitialized();
 
   // Menghubungkan aplikasi ke database Supabase Anda
   await Supabase.initialize(
-    url:
-        'https://xmpcfjzbpecpmjcoarql.supabase.co', // URL dasar tanpa /rest/v1/
-    anonKey: 'sb_publishable_6BKCZcoa4xl2pF2XkbptmQ_zaif8mhr', // Ganti dengan kunci yang berawalan 'eyJ' jika nanti error
+    url: 'https://xmpcfjzbpecpmjcoarql.supabase.co',
+    anonKey: 'sb_publishable_6BKCZcoa4xl2pF2XkbptmQ_zaif8mhr',
   );
 
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => MatchProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => MatchProvider()),
+        ChangeNotifierProvider(
+          create: (_) => WatchlistProvider(),
+        ), // Provider baru ditambahkan di sini
+      ],
       child: const MatchTrackerApp(),
     ),
   );
